@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<html>
+<head>
+	<!-- Copyright (C) 2012 Hiro Inaba -->
+
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+
+	<script type="text/javascript">
+
+	//----------------------------------------
+	// utility
+	//----------------------------------------
+	function round2(x) {
+		var y = x * 100;
+		y = Math.round(y);
+		y = y / 100;
+		return y;
+	}
+
+	//----------------------------------------
+	// Conversion Functions
+	//----------------------------------------
+	conv = new Array;
+
+	// LENGTH
+	conv.to_m		= function(x)	{	return x;				}
+	conv.from_m		= function(x)	{	return x;				}
+	conv.to_cm		= function(x)	{	return x*100;			}
+	conv.from_cm	= function(x)	{	return x/100;			}
+	conv.to_mm		= function(x)	{	return x*1000;			}
+	conv.from_mm	= function(x)	{	return x/1000;			}
+	conv.to_inch	= function(x)	{	return (x*100)/2.54;	}
+	conv.from_inch	= function(x)	{	return (x*2.54)/100;	}
+	conv.to_feet	= function(x)	{	return (x*100)/30.48;	}
+	conv.from_feet	= function(x)	{	return (x*30.48)/100;	}
+
+	// WEIGHT
+	conv.to_g		= function(x)	{	return x; }
+	conv.from_g		= function(x)	{	return x; }
+	conv.to_kg		= function(x)	{	return x/1000; }
+	conv.from_kg	= function(x)	{	return x*1000; }
+	conv.to_lbs		= function(x)	{	return x/453.592; }
+	conv.from_lbs	= function(x)	{	return x*453.592; }
+
+	// TEMPERATURE
+	conv.to_degC	= function(x)	{	return x; }
+	conv.from_degC	= function(x)	{	return x; }
+	conv.to_degF	= function(x)	{	return round2((x*9)/5+32); }
+	conv.from_degF	= function(x)	{	return round2((x-32)*5/9); }
+
+
+	function convert_unit_string(unit) {
+		if (unit == "°C")
+			return "degC";
+		else if (unit == "°F")
+			return "degF";
+		else
+			return unit;
+	}
+
+	function unit_conversion(val0, unit0, unit1) {
+		unit0 = convert_unit_string(unit0);
+		unit1 = convert_unit_string(unit1);
+
+		var tmp = conv['from_'+unit0](val0);
+		var val1 = conv['to_'+unit1](tmp);
+		return val1;
+	}
+
+	//----------------------------------------
+	// dB
+	//----------------------------------------
+	function dB_to_value(x) {
+		return Math.pow(10, x/20);
+	}
+
+	function value_to_dB(x) {
+		return 20*Math.log(x)/Math.LN10;
+	}
+
+	//----------------------------------------
+	// ready
+	//----------------------------------------
+	$(document).ready(function(){
+
+		$("input").change(function(){
+			var val0 = $(this).val();
+
+			//var unit0 = $(this).next().children('a').text();
+			var unit0 = $(this).next().children('a').html();
+			var unit1 = $(this).parent().siblings().children('span').children('a').text();
+			var val1 = unit_conversion(val0, unit0, unit1);
+
+			var current_val1 = $(this).parent().siblings().children('input').val();
+
+			if (val1 != current_val1)
+				$(this).parent().siblings().children('input').val(val1);
+		});
+
+		$("span.dropdown ul li a").click(function(){
+			$(this).parent().parent().prev().text($(this).text());		// ex)  <a id="l_dropdown-toggle_length" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">cm</a>
+			$(this).parent().parent().parent().removeClass('open');		// ex)  <span class="dropdown"  id="l_dropdown_length">
+		});
+
+	});
+
+	</script>
+
+	<style>
+	.author {
+		float: right !IMPORTANT;
+	}
+	</style>
+
+	<title>
+		Unit Converter
+	</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navbar
+    ================================================== -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+
+			<ul class="nav">
+				<li class=""><a href="counter.html">Counter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="timer.html">Timer</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="unit_converter.html">Unit Converter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="bit_editor.html">Bit Editor</a></li>
+			</ul>
+
+			<ul class="nav author">
+				<li class=""><a href="http://hiroina.github.com/tools">hiroina</a></li>
+			</ul>
+		</div>
+	</div>
+
+
+    <!-- Main
+    ================================================== -->
+	<div class="container">
+		<br><br><br><br>
+
+		<div class="page-header">
+			<h1>Unit Converter</h1>Simple unit conversion application
+		</div>
+
+
+		<div class="bs-docs-example">
+			<ul id="myTab" class="nav nav-tabs">
+				<li class="active"><a href="#tab_length" data-toggle="tab">Length</a></li>
+				<li><a href="#tab_weight" data-toggle="tab">Weight</a></li>
+				<li><a href="#tab_temp" data-toggle="tab">Temperature</a></li>
+			</ul>
+			<div id="myTabContent" class="tab-content">
+				<div class="tab-pane fade in active" id="tab_length">
+
+					<!-- Length
+					================================================== -->
+						<div class="row" style="height: 200px;">
+							<div class="span4">
+								<input type="text left" class="span3" id="l_text_length" value="0">
+								<span class="dropdown left"  id="l_dropdown_length">
+										<a id="l_dropdown-toggle_length" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">cm</a>
+										<ul class="dropdown-menu" role="menu">
+											<li><a>m</a></li>
+											<li><a>cm</a></li>
+											<li><a>mm</a></li>
+											<li><a>inch</a></li>
+											<li><a>feet</a></li>
+										</ul>
+								</span>
+							</div>
+
+							<div class="span4">
+								<input type="text right" class="span3" id="r_text" value="0">
+								<span class="dropdown right">
+										<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">inch</a>
+										<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+											<li><a>m</a></li>
+											<li><a>cm</a></li>
+											<li><a>mm</a></li>
+											<li><a>inch</a></li>
+											<li><a>feet</a></li>
+										</ul>
+								</span>
+							</div>
+						</div>
+					<!-- ================================================== -->
+
+				</div>
+				<div class="tab-pane fade" id="tab_weight">
+
+					<!-- Length
+					================================================== -->
+						<div class="row" style="height: 200px;">
+							<div class="span4">
+								<input type="text left" class="span3" value="0">
+								<span class="dropdown left">
+										<a href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">kg</a>
+										<ul class="dropdown-menu" role="menu">
+											<li><a>g</a></li>
+											<li><a>kg</a></li>
+											<li><a>lbs</a></li>
+										</ul>
+								</span>
+							</div>
+
+							<div class="span4">
+								<input type="text right" class="span3" id="r_text" value="0">
+								<span class="dropdown right">
+										<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">lbs</a>
+										<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+											<li><a>g</a></li>
+											<li><a>kg</a></li>
+											<li><a>lbs</a></li>
+										</ul>
+								</span>
+							</div>
+						</div>
+					<!-- ================================================== -->
+
+				</div>
+				<div class="tab-pane fade" id="tab_temp">
+
+					<!-- Temperature
+					================================================== -->
+						<div class="row" style="height: 200px;">
+							<div class="span4">
+								<input type="text left" class="span3" value="">
+								<span class="dropdown left">
+										<a href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">&deg;C</a>
+										<ul class="dropdown-menu" role="menu">
+											<li><a>&deg;C</a></li>
+											<li><a>&deg;F</a></li>
+										</ul>
+								</span>
+							</div>
+
+							<div class="span4">
+								<input type="text right" class="span3" id="r_text" value="">
+								<span class="dropdown right">
+										<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">&deg;F</a>
+										<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+											<li><a>&deg;C</a></li>
+											<li><a>&deg;F</a></li>
+										</ul>
+								</span>
+							</div>
+						</div>
+					<!-- ================================================== -->
+
+				</div>
+			</div>
+
+	</div>
+
+
+</body>
+
+</html>
+
+
+

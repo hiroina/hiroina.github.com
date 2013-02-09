@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<html>
+<head>
+	<!-- Copyright (C) 2012 Hiro Inaba -->
+
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script type="text/javascript">
+
+	function log_update() {
+		var now  = new Date();
+
+		var h = now.getHours();
+		var m = now.getMinutes();
+		var s = now.getSeconds();
+		var ms = now.getMilliseconds();
+
+		h = (h < 10) ? '0'+h : h;
+		m = (m < 10) ? '0'+m : m;
+		s = (s < 10) ? '0'+s : s;
+		ms = (ms < 10) ? '00'+ms : ((ms < 100) ? '0'+ms : ms);
+		text = $("#txt_count").val() + " : " + h + ":" + m + ":" + s + " " + ms + "\n";
+
+		var log = text + $("#txt_log").val();
+		$("#txt_log").val(log);
+	}
+
+	$(document).ready(function(){
+		//$("#btn_log").button('toggle');
+		$("#txt_log").hide();
+
+		$("#btn_up").click(function(){
+			var count = parseInt($("#txt_count").val());
+			$("#txt_count").val(count + 1);
+			log_update();
+			return false;
+		});
+
+		$("#btn_down").click(function(){
+			var count = parseInt($("#txt_count").val());
+			$("#txt_count").val(count - 1);
+			log_update();
+			return false;
+		});
+
+		$("#btn_reset").click(function(){
+			$("#txt_count").val(0);
+			//$("#txt_log").val("");	// clear log
+			return false;
+		});
+
+		$("#btn_log").click(function(){
+			if ($("#txt_log").is(':visible'))
+				$("#txt_log").hide(300);
+			else
+				$("#txt_log").show(300);
+		});
+
+	});
+
+	</script>
+
+	<style>
+	.author {
+		float: right !IMPORTANT;
+	}
+	</style>
+
+	<title>
+		Counter
+	</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navbar
+    ================================================== -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+
+			<ul class="nav">
+				<li class=""><a href="counter.html">Counter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="timer.html">Timer</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="unit_converter.html">Unit Converter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="bit_editor.html">Bit Editor</a></li>
+			</ul>
+
+			<ul class="nav author">
+				<li class=""><a href="http://hiroina.github.com/tools">hiroina</a></li>
+			</ul>
+		</div>
+	</div>
+
+
+    <!-- Main
+    ================================================== -->
+	<div class="container">
+		<br><br><br><br>
+
+		<div class="page-header">
+			<h1>Counter</h1>Simple counter application - click "Up" button
+		</div>
+
+		<div class="navbar">
+			<form class="navbar-form pull-left">
+				<input type="text" class="span3" id="txt_count" placeholder="0" value="0">
+				<button class="btn btn-primary" id="btn_up">Up</button>
+
+<!--				<button class="btn btn-info" id="btn_down">Down</button> -->
+				<button class="btn btn-primary" id="btn_reset">Reset</button>
+				<button type="button" class="btn" data-toggle="button" id="btn_log">Log</button>
+
+			</form>
+		</div>
+		<br><br><br><br>
+	</div>
+
+
+	<div class="container">
+		<div class="navbar">
+			<form class="navbar-form pull-left">
+				<textarea class="input-xlarge span3" id="txt_log" rows="20"></textarea>
+			</form>
+		</div>
+	</div>
+
+</body>
+
+</html>
+

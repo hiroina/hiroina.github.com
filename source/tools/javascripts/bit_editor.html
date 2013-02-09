@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<html>
+<head>
+	<!-- Copyright (C) 2012 Hiro Inaba -->
+
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+
+	<script type="text/javascript">
+
+	function print_log(msg) {
+		$("#txt_log").val($("#txt_log").val()+msg);
+	}
+
+	var zeros = '00000000000000000000000000000000';
+
+	/*
+	 * convert integer to zero padded hex-string
+	 */
+	function toStrHex(data, len) {
+		var tmp = data.toString(16);
+
+		len = (len+3) >> 2;
+
+		if (tmp.length < len)
+			tmp = zeros.substr(0, len - tmp.length) + tmp;
+
+		return tmp;
+	}
+
+	/*
+	 * convert integer to dec string.  This function is not necessary to have 
+	 * as JavaScript automatically convert it.  Just for completeness.
+	 */
+	function toStrDec(data, len) {
+		return data.toString(10);
+	}
+
+	/*
+	 * convert integer to zero padded bin-string with ' ' in every 4 digits
+	 * example:
+	 *   Input:  data=0x23, len = 7
+	 *   Output: '010 0011'
+	 */
+	function toStrBin(data, len) {
+		var tmp = data.toString(2);
+		var tmp1 = "";
+
+		// padding 0
+		if (tmp.length < len)
+			tmp = zeros.substr(0, len - tmp.length) + tmp;
+
+		// insert ' ' in each 4 bits
+
+		var count = len >> 2;	// JavaScript make len/4 to be floating point.  Shift would be faster for divide by 4.
+		var remain = len & 3;	// len % 4
+
+		for (i = 0; i < count; i++)
+			tmp1 = ' ' + tmp.substr(-4 * (i+1), 4) + tmp1;
+
+		if (remain)
+			tmp1 = tmp.substr(0, len%4) + tmp1;
+
+		// remove ' ' if there is in the first char
+		if (tmp1.charAt(0) == ' ')
+			tmp1 = tmp1.substr(1);
+
+		return tmp1;
+	}
+
+	function parseStrHex(str) {
+		return parseInt(str, 16)
+	}
+
+	function parseStrDec(str) {
+		return parseInt(str, 10)
+	}
+
+	function parseStrBin(str) {
+		str = str.replace(/\s/g, "");
+		return parseInt(str, 2)
+	}
+
+	function toUint32(x) {
+		return x >>> 0;
+	}
+
+	/*
+	 * parse_bits:  Parse bits field data.
+	 * example:
+	 *   Input:  bits = "31:0"
+	 *   Output: b.bit1=31, b.bit0=0, b.len=32, b.mask=0xffffffff
+	 */
+	function parse_bits(bits) {
+		if (bits.length == 0) {
+			//print_log('bits.length == 0' + '\n');
+			return {len: 0};
+		}
+
+		var b = bits.split(":");
+		var bit1 = b[0];
+		var bit0 = b[1];
+		var len = b[0] - b[1] + 1;
+		var mask;
+
+		//print_log('bit1 = ' + bit1 + '\n');
+		//print_log('bit0 = ' + bit0 + '\n');
+		//print_log('len  = ' + len + '\n');
+
+		// Check validity of bits field
+		if ( !((31 >= bit1) && (bit1 >= 0)) )
+			return;
+		if ( !((31 >= bit0) && (bit0 >= 0)) )
+			return;
+		if ( !(len > 0) )
+			return;
+
+		/*
+		 * "(1 << len) -1" doesn't work with len = 32.
+		 * Expected (1 << 32) = 0 as it overflowed. However (1 << 32) == 1 on my environment. (Signed/Unsigned related.)
+		 * Hence, need to take care len=32 as a special case.
+		 */
+		if (len < 32)
+			mask = (1 << len) -1;
+		else if (len == 32)
+			mask = 0xFFFFFFFF;
+
+		//print_log('mask = ' + mask.toString(16) + '\n');
+
+		return {bit1: bit1, bit0: bit0, len: len, mask: mask};
+	}
+
+
+	function propagate(TheData) {
+		$("tbody > tr").each(function() {
+			var p = $(this);
+			var bits = p.children('td').children('input.bits').val();
+			var b = parse_bits(bits);
+
+			if (b.len > 0) {
+				var data = toUint32((TheData >> b.bit0) & b.mask);
+
+				p.children('td').children('input.hex').val(toStrHex(data, b.len));
+				p.children('td').children('input.dec').val(toStrDec(data, b.len));
+				p.children('td').children('input.bin').val(toStrBin(data, b.len));
+			}
+		});
+	}
+
+	function updateField(input_text, fieldData) {
+		var p = input_text.parent().parent();
+
+		var bits = p.children('td').children('input.bits').val();
+		var b = parse_bits(bits);
+
+		var TheData = parseStrHex($("#data_hex").val());
+		TheData = toUint32((TheData & ~(b.mask << b.bit0)) | (fieldData << b.bit0));
+
+		propagate(TheData);
+	}
+
+
+	// file:///C:/tmp/bootstrap/bit_editor.html?Data=12345678&SCB_CPUID=31:0&Implementer=31:24&Variant=23:20&Constant=19:16&PartNo=15:4&Revision=3:0
+
+	function LoadParameters() {
+		var arg = new Object;
+		var pair = location.search.substring(1).split('&');
+		for(i = 0; pair[i]; i++) {
+			var k = pair[i].split('=');
+			arg[k[0]] = k[1];
+		}
+
+		i = 0;
+		for(var x in arg){
+			//print_log(x+': '+arg[x]+'\n');
+
+			if (x == "Data")
+				$("#data_hex").val(arg[x]); 
+			else {
+				var p = $("tbody tr").eq(i);
+				p.children('td').children('input.name').val(x);
+				p.children('td').children('input.bits').val(arg[x]);
+				i++;
+			}
+		}
+	}
+
+	function update_url() {
+		// collect all field parameters
+		var param = '';
+		$("tbody > tr").each(function() {
+			var p = $(this);
+			var name = p.children('td').children('input.name').val();
+			var bits = p.children('td').children('input.bits').val();
+
+			if (! (name == "" || name == undefined || bits == "" || bits == undefined))
+				param = param + '&' + name + '=' + bits;
+		});
+
+		// add Data on in the head of it
+		if ($("#data_hex").val())
+			param = 'Data=' + $("#data_hex").val() + param;
+
+		// process url data
+		var url = location.href;
+		var i = url.indexOf('?');
+		if (i >= 0)
+			url = url.slice(0, i);
+		if (param)
+			url = url + '?' + param;
+
+		$("#txt_url").val(url);
+		//print_log(url + '\n');
+
+		return url;
+	}
+
+
+	$(document).ready(function(){
+		$("input[type='text'].hex").change(function(){
+			var fieldData = parseStrHex($(this).val());
+			updateField($(this), fieldData);
+		});
+
+		$("input[type='text'].dec").change(function(){
+			var fieldData = parseStrDec($(this).val());
+			updateField($(this), fieldData);
+		});
+
+		$("input[type='text'].bin").change(function(){
+			var fieldData = parseStrBin($(this).val());
+			updateField($(this), fieldData);
+		});
+
+		$("input[type='text'].bits").change(function(){
+			var TheData = parseStrHex($("#data_hex").val());
+			propagate(TheData);
+		});
+
+
+		$("#btn_clear").click(function(){
+			$(".name").val('');
+			$(".bits").val('');
+			$(".hex").val('');
+			$(".dec").val('');
+			$(".bin").val('');
+			$("#bits_hex").val('31:0');
+		});
+
+		$("#btn_link").click(function(){
+			update_url();
+
+			if ($("#txt_url").is(':visible'))
+				$("#txt_url").hide(300);
+			else {
+				$("#txt_url").show(300);
+				$("#txt_url").select();
+			}
+		});
+
+		// NOTIFY BEFORE LEAVE THIS PAGE
+		$(window).bind('beforeunload', function(event) {
+			var url0 = location.href;
+			var url1 = update_url();
+
+			if (update_url() != location.href) {
+				return 'You are loosing your modification.';
+			}
+		});
+
+		// INITIAL SETTINGS
+		$("#txt_url").hide();
+		LoadParameters();
+		if ($("#data_hex").val())
+			propagate(parseStrHex($("#data_hex").val()));
+
+		/*
+		$("#btn_add").click(function(){
+			$("tbody").append('<tr><td><input type="text" class="span2 name"></td><td><input type="text" class="span1 bits"></td><td><input type="text" class="span2 hex"></td><td><input type="text" class="span2 dec"></td><td><input type="text" class="span6 bin"></td></tr>');
+		});
+		*/
+	});
+
+
+	</script>
+
+	<style>
+	.author {
+		float: right !IMPORTANT;
+	}
+
+	.bin {
+		font-family:monospace;
+		letter-spacing:0.5px;
+	}
+	.dec {
+		font-family:monospace;
+		letter-spacing:1px;
+	}
+	.hex {
+		font-family:monospace;
+		letter-spacing:1px;
+	}
+	</style>
+
+	<title>
+		Bits Editor
+	</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navbar
+    ================================================== -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+
+			<ul class="nav">
+				<li class=""><a href="counter.html">Counter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="timer.html">Timer</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="unit_converter.html">Unit Converter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="bit_editor.html">Bit Editor</a></li>
+			</ul>
+
+			<ul class="nav author">
+				<li class=""><a href="http://hiroina.github.com/tools">hiroina</a></li>
+			</ul>
+		</div>
+	</div>
+
+
+    <!-- Main
+    ================================================== -->
+	<div class="container">
+		<br><br><br><br>
+
+		<div class="page-header">
+			<h1>Bit Editor</h1>Edit 32 bits with composing sub-fields
+		</div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>bits</th>
+                  <th>Hex</th>
+                  <th>Dec</th>
+                  <th>Bin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="control-group success"><input type="text" class="span2 name" value="" placeholder='Register name'></td>
+                  <td class="control-group success"><input type="text" class="span1 bits" id="bits_hex" value="31:0"></td>
+                  <td class="control-group success"><input type="text" class="span2 hex" id="data_hex" value=""  placeholder='hex-value'></td>
+                  <td class="control-group success"><input type="text" class="span2 dec" value=""></td>
+                  <td class="control-group success"><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value="" placeholder='field name'></td>
+                  <td><input type="text" class="span1 bits" value="" placeholder='31:24'></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value="" ></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+                <tr>
+                  <td><input type="text" class="span2 name" value=""></td>
+                  <td><input type="text" class="span1 bits" value=""></td>
+                  <td><input type="text" class="span2 hex" value=""></td>
+                  <td><input type="text" class="span2 dec" value=""></td>
+                  <td><input type="text" class="span6 bin" value=""></td>
+                </tr>
+				<tr class="last_entry"></tr>
+              </tbody>
+
+            </table>
+
+	</div>	<!-- clas="container" -->
+
+	<br>
+
+    <!-- Clear button and URL Text
+    ================================================== -->
+	<div class="container">
+		<div class="row">
+			<!-- <button class="btn span1" id="btn_add">Add</button> -->
+			<button class="btn span1" id="btn_clear">Clear</button>
+			<a class="btn" id="btn_link" data-toggle="button"><i class="icon-share"></i></a>
+		</div>
+		<input class="span12 offset1" id="txt_url" size="16" type="text">
+	</div>
+
+    <!-- Debug Log Text Area.
+    ================================================== -->
+	<!-- Enablet this code	-->
+	<br>
+	<br>
+	<br>
+
+	<div class="container">
+	<form class="navbar-form pull-left">
+		<textarea class="input-xlarge span7" id="txt_log" rows="15"></textarea>
+	</form>
+	</div>
+
+
+
+</body>
+
+</html>

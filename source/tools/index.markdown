@@ -9,6 +9,14 @@ footer: true
 
 This is a page for software tools.
 
-<div>
-<li><a href="/tools/excel-folder">Excel Folder</a></li>
-</div>
+Excel VBA
+---------
+* [Excel Folder](/tools/excel-folder)
+
+
+JavaScript + BootStrap
+----------------------
+* [Bit Editor](/tools/javascripts/bit_editor.html)
+* [Counter](/tools/javascripts/counter.html)
+* [Timer](/tools/javascripts/timer.html)
+* [Unit Converter](/tools/javascripts/unit_converter.html)

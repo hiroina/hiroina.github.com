@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<html>
+<head>
+	<!-- Copyright (C) 2012 Hiro Inaba -->
+
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+
+	<script type="text/javascript">
+	var hh=0, mm=0, ss=0;
+	var timer_id=0;
+
+	function timer_display(){
+		var h, m, s;
+		h = (hh < 10) ? '0'+hh : hh;
+		m = (mm < 10) ? '0'+mm : mm;
+		s = (ss < 10) ? '0'+ss : ss;
+
+		$("#countup").val(h+":"+m+":"+s);
+	}
+
+	function timer_callback(){
+		if (ss == 59 && mm == 59) {
+			hh++;
+			mm=0;
+			ss=0;
+		}
+		else if (ss == 59 && mm < 59) {
+			mm++;
+			ss=0;
+		}
+		else {
+			ss++;
+		}
+		timer_display();
+	}
+
+	function timer_stop(){
+		clearInterval(timer_id);
+		timer_id=0
+	}
+
+	function timer_start(){
+		timer_id = setInterval("timer_callback()",1000);
+	}
+
+	function timer_reset(){
+		hh=0;
+		mm=0;
+		ss=0;
+		timer_display();
+	}
+
+	$(document).ready(function(){
+		$("#start_stop").click(function(){
+			if (timer_id == 0) {
+				$("#start_stop").html("Stop");
+				timer_start();
+				$("#start_stop").attr("class", "btn btn-danger");
+			}
+			else {
+				$("#start_stop").html("Start");
+				timer_stop();
+				$("#start_stop").attr("class", "btn btn-primary");
+			}
+			return false;
+		});
+
+		$("#reset").click(function(){
+			if (timer_id != 0) {
+				timer_stop();
+				timer_reset();
+				timer_start();
+			}
+			else {
+				timer_reset();
+			}
+			return false;
+		});
+
+		$(window).bind('beforeunload', function(event) {
+			if (timer_id)
+				return 'Timer is working.';
+		});
+
+	});
+
+	</script>
+
+	<style>
+	.author {
+		float: right !IMPORTANT;
+	}
+	</style>
+
+	<title>
+		Timer
+	</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navbar
+    ================================================== -->
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+
+			<ul class="nav">
+				<li class=""><a href="counter.html">Counter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="timer.html">Timer</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="unit_converter.html">Unit Converter</a></li>
+			</ul>
+			<ul class="nav">
+				<li class=""><a href="bit_editor.html">Bit Editor</a></li>
+			</ul>
+
+			<ul class="nav author">
+				<li class=""><a href="http://hiroina.github.com/tools">hiroina</a></li>
+			</ul>
+		</div>
+	</div>
+
+
+    <!-- Main
+    ================================================== -->
+	<div class="container">
+		<br><br><br><br>
+
+		<div class="page-header">
+			<h1>Timer</h1>Simple timer application
+		</div>
+		<div class="navbar">
+			<form class="navbar-form pull-left">
+				<input type="text" class="span3" id="countup" value="00:00:00">
+				<button class="btn btn-primary" id="start_stop">Start</button>
+				<button class="btn btn-primary" id="reset">Reset</button>
+			</form>
+		</div>
+	</div>
+
+
+</body>
+
+</html>
